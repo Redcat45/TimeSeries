@@ -45,8 +45,6 @@ class HMM(object):
 		ite = 0
 		while diff > tol and ite < maxiter:
 			lh, alpha, c = self.forward(x)
-			# print lh
-
 			_, beta = self.backward(x, c)
 			gamma = alpha * beta
 			for i in range(hidden):
@@ -74,27 +72,32 @@ class HMM(object):
 		隠れ変数の最尤推定を行う.
 		
 		Return
-			seq  : 最尤推定した状態系列
-			maxP : seqの完全対数尤度
+			states  : 最尤推定した状態系列
 		"""
 		trans = self.trans
 		init = self.init
 		prob = lambda x: self.model.get_prob(x, range(self.hidden)).ravel()
 
-		psis = [np.log(init * prob(x[0]))]
-		phi = []
-		for t in range(1, x.shape[0]):
-			psi = psis[-1]
-			tmp = psi[:, np.newaxis] + np.log(trans)
-			psis.append(np.amax(tmp, axis=0) + np.log(prob(x[t])))
-			phi.append(np.argmax(tmp, axis=0))
-		maxi = np.argmax(psis[-1])
-		maxP = psis[-1][maxi]
-		seq = [maxi]
-		for p in phi[::-1]:
-			seq.append(p[maxi])
-			maxi = seq[-1]
-		return (seq, maxP)
+		_, alpha, c = self.forward(x)
+		_, beta = self.backward(x, c)
+		states = []
+		for i in range(0, x.shape[0]):
+			states.append(np.argmax(alpha[i, :] * beta[i, :]))
+
+		# psis = [np.log(init * prob(x[0]))]
+		# phi = []
+		# for t in range(1, x.shape[0]):
+		# 	psi = psis[-1]
+		# 	tmp = psi[:, np.newaxis] + np.log(trans)
+		# 	psis.append(np.amax(tmp, axis=0) + np.log(prob(x[t])))
+		# 	phi.append(np.argmax(tmp, axis=0))
+		# maxi = np.argmax(psis[-1])
+		# maxP = psis[-1][maxi]
+		# states = [maxi]
+		# for p in phi[::-1]:
+		# 	states.append(p[maxi])
+		# 	maxi = states[-1]
+		return states
 
 	def forward(self, x):
 		u"""
